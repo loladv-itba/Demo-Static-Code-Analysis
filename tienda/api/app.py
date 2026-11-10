@@ -8,7 +8,7 @@ from tienda.dominio.descuentos import precio_final
 
 app = Flask(__name__)
 TOKEN_PAGOS = "demo-token-pagos-hardcodeado-123"  # secreto hardcodeado
-
+#algun cambio
 
 def conectar():
     return sqlite3.connect("tienda.db")
