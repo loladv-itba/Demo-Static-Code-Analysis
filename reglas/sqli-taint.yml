@@ -1,0 +1,22 @@
+rules:
+  - id: sqli-dato-de-usuario-en-consulta
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Un dato que controla el usuario llega a una consulta SQL armada como texto
+      (CWE-89). Usá una consulta parametrizada:
+      cursor.execute("... WHERE cliente = ?", (cliente,))
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+      atributo_de_calidad: Security
+    pattern-sources:
+      - pattern: flask.request.args.get(...)
+      - pattern: flask.request.form.get(...)
+      - pattern: flask.request.get_json(...)
+    pattern-sanitizers:
+      - pattern: int(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: $CURSOR.execute($CONSULTA, ...)
+          - focus-metavariable: $CONSULTA

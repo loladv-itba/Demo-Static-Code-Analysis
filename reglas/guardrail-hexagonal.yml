@@ -1,0 +1,16 @@
+rules:
+  - id: guardrail-dominio-sin-infraestructura
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Guardrail de arquitectura hexagonal: el dominio no puede importar la capa
+      de infraestructura. Definí un puerto (Protocol) en el dominio e inyectá
+      el adaptador desde la capa de API.
+    metadata:
+      atributo_de_calidad: Conceptual Integrity / Maintainability
+    paths:
+      include:
+        - "/tienda/dominio/"
+    pattern-either:
+      - pattern-regex: '(?m)^\s*(from|import)\s+tienda\.infraestructura'
+      - pattern-regex: '(?m)^\s*from\s+\.+infraestructura'
