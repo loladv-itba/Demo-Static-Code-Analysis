@@ -14,6 +14,9 @@ y problemas plantados a propósito. Dos herramientas los detectan sin ejecutar e
 - Python 3.11 o superior.
 - `pip install ruff==0.16.9 semgrep==1.184.0` (las versiones con las que se probó).
 - En Windows, si `pip install semgrep` da problemas, usar WSL u Opengrep (el fork libre, mismas reglas).
+- En Windows, si `ruff` o `semgrep` dan "not recognized", la carpeta `Scripts` de Python no está en el PATH.
+  `python -m ruff check .` funciona igual; para Semgrep, agregá esa carpeta al PATH de la sesión
+  (ver "Problemas comunes en Windows" al final).
 
 ## Correrlo en la compu
 
@@ -34,14 +37,36 @@ Ambos comandos terminan con código de salida 1: eso es lo que hace fallar el pi
 
 ## Aplicar la corrección
 
-Copiar los archivos de `_solucion/` sobre el proyecto:
+Copiar los tres archivos corregidos de `_solucion/` sobre los originales.
+
+**Linux / macOS / WSL (bash):**
 
 ```bash
-cp -r _solucion/tienda/. tienda/
-cp -r _solucion/tests/. tests/
+cp _solucion/tienda/api/app.py tienda/api/app.py
+cp _solucion/tienda/dominio/descuentos.py tienda/dominio/descuentos.py
+cp _solucion/tests/test_descuentos.py tests/test_descuentos.py
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Copy-Item _solucion\tienda\api\app.py tienda\api\app.py -Force
+Copy-Item _solucion\tienda\dominio\descuentos.py tienda\dominio\descuentos.py -Force
+Copy-Item _solucion\tests\test_descuentos.py tests\test_descuentos.py -Force
+```
+
+> No usar `cp -r _solucion/tienda/. tienda/` en PowerShell: ahí `cp` es `Copy-Item` y copia la carpeta
+> adentro de la otra (`tienda\tienda`), sin pisar los originales. Los hallazgos no cambian y parece que
+> la corrección no funciona.
+
+Verificar (en PowerShell también sirve `python -m ruff check .`):
+
+```bash
 ruff check . && semgrep scan --config reglas/ --error --metrics=off   # todo en verde
 python -m pytest -q tests                                            # 4 tests pasan
 ```
+
+Para volver al estado con problemas: `git checkout -- tienda tests`.
 
 Qué cambia:
 
@@ -62,3 +87,13 @@ Qué cambia:
 | 1:45–3:00 | `semgrep scan --config reglas/ --error` | Fuente (`request.args`) y sumidero (`execute`); el dominio importando infraestructura. |
 | 3:00–4:15 | El pull request en GitHub con el check rojo | El merge está bloqueado: el prompt sugiere, el gate exige. |
 | 4:15–5:00 | La corrección y el check verde | Qué atributo protegió cada regla y cuánto tardó. |
+
+## Problemas comunes en Windows
+
+| Síntoma | Causa | Solución |
+| --- | --- | --- |
+| `ruff` / `semgrep` "is not recognized" | La carpeta `Scripts` de Python no está en el PATH | `python -m ruff check .` para Ruff. Para Semgrep, buscar la carpeta con `python -c "import sysconfig; print(sysconfig.get_path('scripts'))"` y agregarla: `$env:Path += ";<carpeta>"` |
+| Semgrep falla por caracteres raros (tildes en las reglas) | Codificación de la consola | `$env:PYTHONUTF8 = "1"` antes de correrlo |
+| `cp -r` no cambia nada | PowerShell interpreta distinto el comando | Usar los `Copy-Item` de arriba |
+| GitHub rechaza el push por un "secreto" | Push protection detecta tokens con formato real | El token de la demo es falso y no tiene formato de proveedor; no usar el enlace de "permitir secreto". Si quedó en un commit viejo, reiniciar el historial (`Remove-Item -Recurse -Force .git; git init`) |
+| Semgrep no instala o no corre | Soporte de Windows nativo no verificado | Usar WSL, Opengrep o Docker; el workflow de GitHub Actions corre en Linux igual |
