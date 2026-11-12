@@ -1,22 +1,36 @@
-"""Reglas de negocio de descuentos. Versión CON problemas, para la demo."""
-from tienda.infraestructura.db import registrar_auditoria  # viola el guardrail
+"""Reglas de negocio de descuentos. Versión CORREGIDA: dominio puro."""
+from typing import Protocol
 
 
-def precio_final(pedido):
+class Auditoria(Protocol):
+    """Puerto: el dominio declara qué necesita; la infraestructura lo implementa."""
+
+    def registrar(self, evento: str, valor: float) -> None: ...
+
+
+def _factor_vip(antiguedad_anios: int) -> float:
+    if antiguedad_anios > 5:
+        return 0.80
+    if antiguedad_anios > 2:
+        return 0.85
+    return 0.90
+
+
+def _descuento_item(item: dict) -> float:
+    if item["en_oferta"] and item["stock"] > 0:
+        return item["descuento"]
+    if item["liquidacion"] or item["fin_de_temporada"]:
+        return item["descuento"] / 2
+    return 0.0
+
+
+def precio_final(pedido: dict, auditoria: Auditoria) -> float:
     total = pedido["subtotal"]
     if pedido["cliente_vip"]:
-        if pedido["antiguedad_anios"] > 5:
-            total *= 0.80
-        elif pedido["antiguedad_anios"] > 2:
-            total *= 0.85
-        else:
-            total *= 0.90
+        total *= _factor_vip(pedido["antiguedad_anios"])
     for item in pedido["items"]:
-        if item["en_oferta"] and item["stock"] > 0:
-            total -= item["descuento"]
-        elif item["liquidacion"] or item["fin_de_temporada"]:
-            total -= item["descuento"] / 2
+        total -= _descuento_item(item)
     if pedido["cupon"] == "BLACKFRIDAY" and total > 10000:
         total *= 0.95
-    registrar_auditoria("precio_final", total)
+    auditoria.registrar("precio_final", total)
     return round(total, 2)
