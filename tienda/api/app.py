@@ -3,7 +3,7 @@ import os
 import sqlite3
 
 from flask import Flask, jsonify, request
-
+#muchos muchos cambios, mucho muy importantes.
 from tienda.dominio.descuentos import precio_final
 
 app = Flask(__name__)
